@@ -1,0 +1,254 @@
+{
+  "info": {
+    "name": "Roadside Assistance API",
+    "description": "Complete API collection for testing the Roadside Assistance Platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health & Test",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3001/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Test Database Connection",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3001/api/test-db",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "test-db"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Drivers",
+      "item": [
+        {
+          "name": "Get All Drivers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3001/api/drivers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "drivers"]
+            }
+          }
+        },
+        {
+          "name": "Create Driver",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"phone\": \"+91-9876543210\",\n  \"license_number\": \"DL123456789\",\n  \"location\": {\n    \"latitude\": 9.9252,\n    \"longitude\": 78.1198\n  },\n  \"vehicle_info\": {\n    \"make\": \"Toyota\",\n    \"model\": \"Camry\",\n    \"year\": 2020\n  }\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/api/drivers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "drivers"]
+            }
+          }
+        },
+        {
+          "name": "Find Nearby Drivers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3001/api/drivers/nearby?latitude=9.9252&longitude=78.1198&radius=10",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "drivers", "nearby"],
+              "query": [
+                {
+                  "key": "latitude",
+                  "value": "9.9252"
+                },
+                {
+                  "key": "longitude",
+                  "value": "78.1198"
+                },
+                {
+                  "key": "radius",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Driver",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe Updated\",\n  \"status\": \"busy\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/api/drivers/:id",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "drivers", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "driver-uuid-here"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Fleet Owners",
+      "item": [
+        {
+          "name": "Get All Fleet Owners",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3001/api/fleet-owners",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "fleet-owners"]
+            }
+          }
+        },
+        {
+          "name": "Create Fleet Owner",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Fleet Manager\",\n  \"email\": \"manager@fleet.com\",\n  \"phone\": \"+91-9876543221\",\n  \"company_name\": \"ABC Transport Co\",\n  \"business_license\": \"BL123456\",\n  \"address\": \"123 Business Street, Madurai\",\n  \"fleet_size\": 25\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/api/fleet-owners",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "fleet-owners"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Service Requests",
+      "item": [
+        {
+          "name": "Get All Service Requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3001/api/service-requests",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "service-requests"]
+            }
+          }
+        },
+        {
+          "name": "Create Service Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"service_type\": \"Engine Repair\",\n  \"description\": \"Car engine making strange noise and won't start properly\",\n  \"location\": {\n    \"latitude\": 9.9252,\n    \"longitude\": 78.1198,\n    \"address\": \"Near Madurai Junction Railway Station\"\n  },\n  \"priority\": \"high\",\n  \"vehicle_info\": {\n    \"make\": \"Honda\",\n    \"model\": \"City\",\n    \"year\": 2019,\n    \"license_plate\": \"TN-01-AB-1234\"\n  }\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/api/service-requests",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "service-requests"]
+            }
+          }
+        },
+        {
+          "name": "Update Service Request Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"in_progress\",\n  \"assigned_provider_id\": \"provider-uuid-here\",\n  \"estimated_cost\": 2500.00\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/api/service-requests/:id",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "service-requests", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "request-uuid-here"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Google Maps API Test</title>
+    <style>
+        #map {
+            height: 400px;
+            width: 100%;
+        }
+        .info {
+            padding: 20px;
+            background: #f5f5f5;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h2>Google Maps API Direct Test</h2>
+        <p>This is a direct test of the Google Maps API without React/Vite.</p>
+        <p>API Key: AIzaSyCB8NudGhoH9lckbioVK14OMFzdivSVPJQ</p>
+        <p>If you see a map below, the API key is working.</p>
+    </div>
+    
+    <div id="map"></div>
+    
+    <script>
+        function initMap() {
+            console.log('Google Maps callback triggered');
+            
+            const map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 13,
+                center: { lat: 9.9252, lng: 78.1198 }, // Madurai
+            });
+            
+            new google.maps.Marker({
+                position: { lat: 9.9252, lng: 78.1198 },
+                map: map,
+                title: "Madurai, Tamil Nadu"
+            });
+            
+            console.log('Map initialized successfully');
+        }
+        
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            console.error('Error: ', msg, 'at', url, ':', lineNo);
+            document.getElementById('map').innerHTML = '<div style="padding: 20px; color: red;">Error: ' + msg + '</div>';
+        };
+    </script>
+    
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCB8NudGhoH9lckbioVK14OMFzdivSVPJQ&callback=initMap">
+    </script>
+</body>
+</html>
