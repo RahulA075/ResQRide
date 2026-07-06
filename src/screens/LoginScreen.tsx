@@ -127,15 +127,6 @@ const LoginScreen: React.FC = () => {
                   Remember me
                 </label>
               </div>
-
-              <div className="text-sm">
-                <Link
-                  to="/forgot-password"
-                  className="font-medium text-primary-600 hover:text-primary-500"
-                >
-                  Forgot your password?
-                </Link>
-              </div>
             </div>
 
             <div>
@@ -174,6 +165,9 @@ const LoginScreen: React.FC = () => {
               </div>
               <div className="bg-gray-50 p-2 rounded">
                 <strong>Fleet Owner:</strong> fleet@test.com / password
+              </div>
+              <div className="bg-gray-50 p-2 rounded">
+                <strong>Provider:</strong> provider@test.com / password
               </div>
             </div>
           </div>

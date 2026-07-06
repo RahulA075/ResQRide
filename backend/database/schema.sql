@@ -5,9 +5,6 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "postgis";
 
--- Enable Row Level Security
-ALTER DATABASE postgres SET "app.jwt_secret" TO 'roadside_assistance_super_secret_key_2024';
-
 -- Users table (handles drivers, service providers, and fleet owners)
 CREATE TABLE users (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,

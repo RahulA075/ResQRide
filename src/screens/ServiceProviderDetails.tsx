@@ -2,40 +2,56 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Star, MapPin, Phone, Clock, CheckCircle } from 'lucide-react'
 import { ServiceProvider } from '../types'
+import { api } from '../lib/api'
+import { useAuth } from '../contexts/AuthContext'
 
 const ServiceProviderDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [provider, setProvider] = useState<ServiceProvider | null>(null)
+  const [reviews, setReviews] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showRequestModal, setShowRequestModal] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [requestError, setRequestError] = useState('')
+  const [requestForm, setRequestForm] = useState({
+    description: '',
+    serviceType: 'mechanical',
+    vehicleMake: '',
+    vehicleModel: '',
+    vehicleYear: new Date().getFullYear(),
+    licensePlate: ''
+  })
 
   useEffect(() => {
     loadProviderDetails()
   }, [id])
 
   const loadProviderDetails = async () => {
-    // Mock data - in real app, this would be an API call
-    const mockProvider: ServiceProvider = {
-      id: id!,
-      businessName: 'Quick Fix Auto',
-      contactInfo: { phone: '+1-555-0123', email: 'info@quickfix.com' },
-      location: { latitude: 40.7128, longitude: -74.0060 },
-      services: [
-        { id: '1', name: 'Engine Repair', category: 'mechanical' },
-        { id: '2', name: 'Brake Service', category: 'mechanical' },
-        { id: '3', name: 'Oil Change', category: 'mechanical' },
-        { id: '4', name: 'Battery Replacement', category: 'electrical' }
-      ],
-      rating: { average: 4.5, totalReviews: 127 },
-      availability: true,
-      operatingHours: { open: '08:00', close: '18:00' },
-      isVerified: true,
-      distance: 1.2,
-      estimatedArrival: 15
+    try {
+      const data = await api.get<{ provider: any }>(`/providers/${id}`)
+      const p = data.provider
+      const mapped: ServiceProvider = {
+        id: p.id,
+        businessName: p.business_name || p.full_name,
+        contactInfo: { phone: p.phone, email: p.email },
+        location: { latitude: p.latitude || 0, longitude: p.longitude || 0 },
+        services: (p.services || []).map((s: any) => ({ id: s.id, name: s.name, category: s.category })),
+        rating: { average: parseFloat(p.average_rating) || 0, totalReviews: p.total_reviews || 0 },
+        availability: p.availability,
+        operatingHours: { open: '24/7', close: '24/7' },
+        isVerified: p.is_verified,
+        distance: p.distance || 0,
+        estimatedArrival: p.estimatedArrival || 15
+      }
+      setProvider(mapped)
+      setReviews(p.reviews || [])
+    } catch (err) {
+      console.error('Failed to load provider:', err)
+    } finally {
+      setLoading(false)
     }
-    setProvider(mockProvider)
-    setLoading(false)
   }
 
   const handleCall = () => {
@@ -46,6 +62,48 @@ const ServiceProviderDetails: React.FC = () => {
 
   const handleRequestService = () => {
     setShowRequestModal(true)
+    setRequestError('')
+  }
+
+  const handleSubmitRequest = async () => {
+    if (!requestForm.description.trim()) {
+      setRequestError('Please describe your issue')
+      return
+    }
+    setSubmitting(true)
+    setRequestError('')
+    try {
+      // Get current location
+      const getCoords = (): Promise<GeolocationCoordinates | null> =>
+        new Promise(resolve =>
+          navigator.geolocation?.getCurrentPosition(
+            p => resolve(p.coords),
+            () => resolve(null),
+            { timeout: 5000 }
+          )
+        )
+      const coords = await getCoords()
+      const lat = coords?.latitude ?? provider?.location.latitude ?? 9.9252
+      const lng = coords?.longitude ?? provider?.location.longitude ?? 78.1198
+
+      const data = await api.post<{ emergency: { id: string } }>('/emergency/request', {
+        location: { latitude: lat, longitude: lng },
+        description: requestForm.description,
+        serviceType: requestForm.serviceType,
+        vehicleInfo: {
+          make: requestForm.vehicleMake,
+          model: requestForm.vehicleModel,
+          year: requestForm.vehicleYear,
+          licensePlate: requestForm.licensePlate
+        }
+      })
+      setShowRequestModal(false)
+      navigate(`/tracking/${data.emergency.id}`)
+    } catch (err: any) {
+      setRequestError(err.message || 'Failed to send request')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   if (loading) {
@@ -162,69 +220,117 @@ const ServiceProviderDetails: React.FC = () => {
       {/* Recent Reviews */}
       <div className="bg-white p-4">
         <h3 className="font-semibold text-gray-900 mb-3">Recent Reviews</h3>
-        <div className="space-y-3">
-          {/* Mock reviews */}
-          <div className="border-b pb-3">
-            <div className="flex items-center space-x-2 mb-1">
-              <div className="flex">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star key={star} className="h-4 w-4 text-yellow-400 fill-current" />
-                ))}
+        {reviews.length === 0 ? (
+          <p className="text-sm text-gray-500">No reviews yet</p>
+        ) : (
+          <div className="space-y-3">
+            {reviews.slice(0, 5).map((review: any) => (
+              <div key={review.id} className="border-b pb-3 last:border-0">
+                <div className="flex items-center space-x-2 mb-1">
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`h-4 w-4 ${star <= review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm text-gray-600">
+                    {new Date(review.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                {review.comment && (
+                  <p className="text-sm text-gray-700">"{review.comment}"</p>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  — {review.reviewer?.full_name || 'Anonymous'}
+                </p>
               </div>
-              <span className="text-sm text-gray-600">2 days ago</span>
-            </div>
-            <p className="text-sm text-gray-700">
-              "Excellent service! Fixed my engine problem quickly and at a fair price. Highly recommended."
-            </p>
-            <p className="text-xs text-gray-500 mt-1">- John D.</p>
+            ))}
           </div>
-          <div className="border-b pb-3">
-            <div className="flex items-center space-x-2 mb-1">
-              <div className="flex">
-                {[1, 2, 3, 4].map((star) => (
-                  <Star key={star} className="h-4 w-4 text-yellow-400 fill-current" />
-                ))}
-                <Star className="h-4 w-4 text-gray-300" />
-              </div>
-              <span className="text-sm text-gray-600">1 week ago</span>
-            </div>
-            <p className="text-sm text-gray-700">
-              "Good service, arrived on time. Could have been a bit more thorough with the explanation."
-            </p>
-            <p className="text-xs text-gray-500 mt-1">- Sarah M.</p>
-          </div>
-        </div>
-        <button className="mt-3 text-primary-500 text-sm font-medium hover:text-primary-600">
-          View all reviews
-        </button>
+        )}
       </div>
 
       {/* Request Service Modal */}
       {showRequestModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Request Service</h3>
+            {requestError && (
+              <div className="mb-4 bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">
+                {requestError}
+              </div>
+            )}
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Describe your issue
+                  Service Type
+                </label>
+                <select
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  value={requestForm.serviceType}
+                  onChange={e => setRequestForm({ ...requestForm, serviceType: e.target.value })}
+                >
+                  <option value="mechanical">Mechanical Repair</option>
+                  <option value="electrical">Electrical</option>
+                  <option value="towing">Towing</option>
+                  <option value="parts">Parts</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Describe your issue *
                 </label>
                 <textarea
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   rows={3}
                   placeholder="What's wrong with your vehicle?"
+                  value={requestForm.description}
+                  onChange={e => setRequestForm({ ...requestForm, description: e.target.value })}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Urgency Level
-                </label>
-                <select className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent">
-                  <option value="low">Low - Can wait</option>
-                  <option value="medium">Medium - Soon as possible</option>
-                  <option value="high">High - Urgent</option>
-                  <option value="emergency">Emergency</option>
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Make</label>
+                  <input
+                    type="text"
+                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    placeholder="e.g. Maruti"
+                    value={requestForm.vehicleMake}
+                    onChange={e => setRequestForm({ ...requestForm, vehicleMake: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
+                  <input
+                    type="text"
+                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    placeholder="e.g. Swift"
+                    value={requestForm.vehicleModel}
+                    onChange={e => setRequestForm({ ...requestForm, vehicleModel: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                  <input
+                    type="number"
+                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    value={requestForm.vehicleYear}
+                    onChange={e => setRequestForm({ ...requestForm, vehicleYear: parseInt(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">License Plate</label>
+                  <input
+                    type="text"
+                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    placeholder="e.g. TN01AB1234"
+                    value={requestForm.licensePlate}
+                    onChange={e => setRequestForm({ ...requestForm, licensePlate: e.target.value })}
+                  />
+                </div>
               </div>
             </div>
             <div className="flex space-x-3 mt-6">
@@ -235,13 +341,11 @@ const ServiceProviderDetails: React.FC = () => {
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  setShowRequestModal(false)
-                  navigate('/tracking/123')
-                }}
-                className="flex-1 bg-primary-500 text-white py-2 rounded-lg font-medium hover:bg-primary-600 transition-colors"
+                onClick={handleSubmitRequest}
+                disabled={submitting}
+                className="flex-1 bg-primary-500 text-white py-2 rounded-lg font-medium hover:bg-primary-600 transition-colors disabled:opacity-50"
               >
-                Send Request
+                {submitting ? 'Sending...' : 'Send Request'}
               </button>
             </div>
           </div>

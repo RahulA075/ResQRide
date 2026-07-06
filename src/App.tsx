@@ -10,6 +10,7 @@ import EmergencyScreen from './screens/EmergencyScreen'
 import PartsMarketplace from './screens/PartsMarketplace'
 import TrackingScreen from './screens/TrackingScreen'
 import FleetDashboard from './screens/FleetDashboard'
+import ServiceProviderDashboard from './screens/ServiceProviderDashboard'
 import MapDemoScreen from './screens/MapDemoScreen'
 import BasicMapTestScreen from './screens/BasicMapTestScreen'
 import MapTestLandingScreen from './screens/MapTestLandingScreen'
@@ -26,8 +27,8 @@ const AppRoutes = () => {
     <div className="h-full flex flex-col">
       <Routes>
         {/* Public Routes */}
-        <Route path="/login" element={!user ? <LoginScreen /> : <Navigate to={user?.role === 'driver' ? '/find-help' : '/dashboard'} replace />} />
-        <Route path="/register" element={!user ? <RegisterScreen /> : <Navigate to={user?.role === 'driver' ? '/find-help' : '/dashboard'} replace />} />
+        <Route path="/login" element={!user ? <LoginScreen /> : <Navigate to={user?.role === 'driver' ? '/find-help' : user?.role === 'service_provider' ? '/provider-dashboard' : '/dashboard'} replace />} />
+        <Route path="/register" element={!user ? <RegisterScreen /> : <Navigate to={user?.role === 'driver' ? '/find-help' : user?.role === 'service_provider' ? '/provider-dashboard' : '/dashboard'} replace />} />
         <Route path="/map-demo" element={<MapDemoScreen />} />
         <Route path="/map-test" element={<BasicMapTestScreen />} />
         <Route path="/maps" element={<MapTestLandingScreen />} />
@@ -75,6 +76,13 @@ const AppRoutes = () => {
         <Route path="/dashboard" element={
           <ProtectedRoute requiredRole="fleet_owner">
             <FleetDashboard />
+          </ProtectedRoute>
+        } />
+
+        {/* Service Provider Routes */}
+        <Route path="/provider-dashboard" element={
+          <ProtectedRoute requiredRole="service_provider">
+            <ServiceProviderDashboard />
           </ProtectedRoute>
         } />
         

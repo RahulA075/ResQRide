@@ -6,6 +6,7 @@ import DriverMapComponent from '../components/DriverMapComponent'
 import LocationPermissionModal from '../components/LocationPermissionModal'
 import SOSButton from '../components/SOSButton'
 import { useAuth } from '../contexts/AuthContext'
+import { api } from '../lib/api'
 
 const LocationScreen: React.FC = () => {
   const navigate = useNavigate()
@@ -52,49 +53,30 @@ const LocationScreen: React.FC = () => {
   }
 
   const findNearbyProviders = async (location: Coordinates) => {
-    // Mock data - in real app, this would be an API call
-    const mockProviders: ServiceProvider[] = [
-      {
-        id: '1',
-        businessName: 'Quick Fix Auto',
-        contactInfo: { phone: '+1-555-0123', email: 'info@quickfix.com' },
-        location: { latitude: location.latitude + 0.01, longitude: location.longitude + 0.01 },
-        services: [{ id: '1', name: 'Engine Repair', category: 'mechanical' }],
-        rating: { average: 4.5, totalReviews: 127 },
-        availability: true,
-        operatingHours: { open: '08:00', close: '18:00' },
-        isVerified: true,
-        distance: 1.2,
-        estimatedArrival: 15
-      },
-      {
-        id: '2',
-        businessName: 'Emergency Towing Co',
-        contactInfo: { phone: '+1-555-0456', email: 'help@emergencytow.com' },
-        location: { latitude: location.latitude - 0.005, longitude: location.longitude + 0.015 },
-        services: [{ id: '2', name: 'Towing Service', category: 'towing' }],
-        rating: { average: 4.2, totalReviews: 89 },
-        availability: true,
+    try {
+      const data = await api.get<{ providers: any[] }>(
+        `/providers/nearby?latitude=${location.latitude}&longitude=${location.longitude}&radius=25`
+      )
+      // Map API response to ServiceProvider type
+      const mapped: ServiceProvider[] = (data.providers || []).map((p: any) => ({
+        id: p.id,
+        businessName: p.business_name || p.full_name,
+        contactInfo: { phone: p.phone, email: p.email },
+        location: { latitude: p.latitude || location.latitude, longitude: p.longitude || location.longitude },
+        services: (p.services || []).map((s: any) => ({ id: s.id, name: s.name, category: s.category })),
+        rating: { average: parseFloat(p.average_rating) || 0, totalReviews: p.total_reviews || 0 },
+        availability: p.availability,
         operatingHours: { open: '24/7', close: '24/7' },
-        isVerified: true,
-        distance: 0.8,
-        estimatedArrival: 10
-      },
-      {
-        id: '3',
-        businessName: 'Battery Express',
-        contactInfo: { phone: '+1-555-0789', email: 'help@batteryexpress.com' },
-        location: { latitude: location.latitude + 0.008, longitude: location.longitude - 0.012 },
-        services: [{ id: '3', name: 'Battery Replacement', category: 'electrical' }],
-        rating: { average: 4.7, totalReviews: 156 },
-        availability: false,
-        operatingHours: { open: '09:00', close: '17:00' },
-        isVerified: true,
-        distance: 1.5,
-        estimatedArrival: 20
-      }
-    ]
-    setNearbyProviders(mockProviders)
+        isVerified: p.is_verified,
+        distance: p.distance,
+        estimatedArrival: p.estimatedArrival
+      }))
+      setNearbyProviders(mapped)
+    } catch (err) {
+      console.error('Failed to load nearby providers:', err)
+      // Fall back to empty list — don't crash the map
+      setNearbyProviders([])
+    }
   }
 
   const handleLogout = () => {

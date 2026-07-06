@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Filter, Star, MapPin, Clock, Phone } from 'lucide-react'
 import { ServiceProvider } from '../types'
 import FilterModal from '../components/FilterModal'
+import { api } from '../lib/api'
 
 const ServiceProviderList: React.FC = () => {
   const navigate = useNavigate()
@@ -27,53 +28,42 @@ const ServiceProviderList: React.FC = () => {
   }, [providers, filters])
 
   const loadProviders = async () => {
-    // Mock data - in real app, this would be an API call
-    const mockProviders: ServiceProvider[] = [
-      {
-        id: '1',
-        businessName: 'Quick Fix Auto',
-        contactInfo: { phone: '+1-555-0123', email: 'info@quickfix.com' },
-        location: { latitude: 40.7128, longitude: -74.0060 },
-        services: [
-          { id: '1', name: 'Engine Repair', category: 'mechanical' },
-          { id: '2', name: 'Brake Service', category: 'mechanical' }
-        ],
-        rating: { average: 4.5, totalReviews: 127 },
-        availability: true,
-        operatingHours: { open: '08:00', close: '18:00' },
-        isVerified: true,
-        distance: 1.2,
-        estimatedArrival: 15
-      },
-      {
-        id: '2',
-        businessName: 'Emergency Towing Co',
-        contactInfo: { phone: '+1-555-0456', email: 'help@emergencytow.com' },
-        location: { latitude: 40.7589, longitude: -73.9851 },
-        services: [{ id: '3', name: 'Towing Service', category: 'towing' }],
-        rating: { average: 4.2, totalReviews: 89 },
-        availability: true,
+    try {
+      // Get user location for distance sorting
+      const getCoords = (): Promise<GeolocationCoordinates | null> =>
+        new Promise(resolve =>
+          navigator.geolocation?.getCurrentPosition(
+            p => resolve(p.coords),
+            () => resolve(null),
+            { timeout: 5000 }
+          )
+        )
+      const coords = await getCoords()
+      const lat = coords?.latitude ?? 9.9252
+      const lng = coords?.longitude ?? 78.1198
+
+      const data = await api.get<{ providers: any[] }>(
+        `/providers/nearby?latitude=${lat}&longitude=${lng}&radius=50`
+      )
+      const mapped: ServiceProvider[] = (data.providers || []).map((p: any) => ({
+        id: p.id,
+        businessName: p.business_name || p.full_name,
+        contactInfo: { phone: p.phone, email: p.email },
+        location: { latitude: p.latitude ?? lat, longitude: p.longitude ?? lng },
+        services: (p.services || []).map((s: any) => ({ id: s.id, name: s.name, category: s.category })),
+        rating: { average: parseFloat(p.average_rating) || 0, totalReviews: p.total_reviews || 0 },
+        availability: p.availability,
         operatingHours: { open: '24/7', close: '24/7' },
-        isVerified: true,
-        distance: 0.8,
-        estimatedArrival: 10
-      },
-      {
-        id: '3',
-        businessName: 'AutoParts Express',
-        contactInfo: { phone: '+1-555-0789', email: 'sales@autoparts.com' },
-        location: { latitude: 40.7505, longitude: -73.9934 },
-        services: [{ id: '4', name: 'Parts Supply', category: 'parts' }],
-        rating: { average: 4.7, totalReviews: 203 },
-        availability: false,
-        operatingHours: { open: '09:00', close: '17:00' },
-        isVerified: true,
-        distance: 2.1,
-        estimatedArrival: 25
-      }
-    ]
-    setProviders(mockProviders)
-    setLoading(false)
+        isVerified: p.is_verified,
+        distance: p.distance,
+        estimatedArrival: p.estimatedArrival
+      }))
+      setProviders(mapped)
+    } catch (err) {
+      console.error('Failed to load providers:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const applyFilters = () => {
