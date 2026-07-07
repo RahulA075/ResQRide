@@ -11,6 +11,7 @@ build/
 .env.local
 .env.*.local
 backend/.env
+# .env.production is intentionally committed for GitHub Pages build
 
 # Logs
 *.log
