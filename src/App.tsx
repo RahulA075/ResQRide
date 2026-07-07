@@ -101,7 +101,7 @@ const AppRoutes = () => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
+      <Router basename="/ResQRide">
         <AppRoutes />
       </Router>
     </AuthProvider>
